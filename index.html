@@ -41,8 +41,18 @@
   .status{min-height:22px;margin-top:10px;font-size:12px;color:#2b6b3d;line-height:1.5}
   .status.error{color:#c00}
   .preview-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;font-size:12px;color:#666}
-  .signature-stage{background:#fff;border:1px solid #ededf0;width:fit-content;min-width:602px;padding:0 0 10px}
-  .signature-stage canvas{display:block;width:600px;height:156px}
+  .signature-stage{background:#fff;border:1px solid #ededf0;padding:22px 24px 24px}
+  .sample-mail{margin:0 0 16px;font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC","Heiti TC",sans-serif;font-size:10pt;line-height:1.6;color:#222}
+  .sample-mail p{margin:0 0 10pt}
+  .sample-tag{display:inline-block;margin-bottom:12px;padding:2px 8px;border-radius:999px;background:#f1f1f3;color:#888;font-size:11px}
+  .signature-stage canvas{display:block;width:450px;height:117px}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg label{margin:0;cursor:pointer}
+  .seg input{position:absolute;opacity:0;width:1px;height:1px}
+  .seg span{display:block;padding:9px 11px;border:1px solid #d9d9de;border-radius:8px;font-size:14px;color:#111;background:#fff}
+  .seg small{display:block;margin-top:2px;font-size:11px;color:#888}
+  .seg input:checked + span{border-color:#111;box-shadow:inset 0 0 0 1px #111}
+  .seg input:focus-visible + span{outline:2px solid #999;outline-offset:2px}
   .help{margin-top:16px;padding:14px 15px;border-radius:10px;background:#fafafa;color:#555;font-size:12px;line-height:1.7}
   .help ol{margin:4px 0 0;padding-left:18px}
   .help details{margin-top:8px;border-top:1px solid #ececef;padding-top:8px}
@@ -89,6 +99,14 @@
         <div class="field">
           <label for="phone">公司電話</label>
           <input id="phone" value="+886 2 2371 6000" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>圖片尺寸</label>
+        <div class="seg" role="radiogroup" aria-label="圖片尺寸">
+          <label><input type="radio" name="size" value="standard" checked><span>標準版<small>450 × 117</small></span></label>
+          <label><input type="radio" name="size" value="large"><span>大版<small>600 × 156</small></span></label>
         </div>
       </div>
 
@@ -142,11 +160,16 @@
 
     <section class="panel preview-panel">
       <div class="preview-label">
-        <span>簽名檔預覽（600 × 156 圖片＋文字連結）</span>
+        <span id="previewLabel">簽名檔預覽（實際大小 450 × 117）</span>
         <span>收件人點技術信箱即可寄信</span>
       </div>
 
       <div class="signature-stage">
+        <span class="sample-tag">範例信件（內文 10pt）</span>
+        <div class="sample-mail">
+          <p>您好：</p>
+          <p>附件為本次的報價單，請參考。<br>如有任何問題，歡迎隨時與我聯繫，謝謝！</p>
+        </div>
         <canvas id="sigCanvas" width="1200" height="312"></canvas>
         <div id="mailLine"></div>
       </div>
@@ -177,7 +200,17 @@ const COMPANY = {
   }
 };
 
-const W = 600, H = 156, SCALE = 2;   // 2 倍解析度輸出，在高解析螢幕上也清楚
+const W = 600, H = 156, SCALE = 2;   // 版面基準尺寸；以 2 倍像素（1200 × 312）輸出
+// 信件中實際顯示的大小（等比縮放，排版不變），使用者可在表單切換。
+// 圖片一律輸出 1200 × 312 像素，再依尺寸寫入對應 DPI，讓 Outlook 自動以正確寬度顯示。
+const SIZES = {
+  standard: { w: 450, name: "標準版" },
+  large:    { w: 600, name: "大版" }
+};
+let sizeKey = "standard";
+const displayW  = () => SIZES[sizeKey].w;
+const displayH  = () => Math.round(H * displayW() / W);
+const exportDpi = () => 96 * (W * SCALE) / displayW();   // 標準版 256 DPI、大版 192 DPI
 const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif';
 const FONT_EN = '"Noto Sans",' + FONT;   // 英文名斜體用
 const $ = id => document.getElementById(id);
@@ -410,8 +443,16 @@ async function ensureFonts(){
 }
 
 let renderSeq = 0;
+function applySize(){
+  const cv = $("sigCanvas");
+  cv.style.width = displayW() + "px";
+  cv.style.height = displayH() + "px";
+  $("previewLabel").textContent = `簽名檔預覽（${SIZES[sizeKey].name}，實際大小 ${displayW()} × ${displayH()}）`;
+}
+
 function render(){
   if (!IMGS) return;
+  applySize();
   drawSignature($("sigCanvas"));
   $("mailLine").innerHTML = mailLineHtml();
   const seq = ++renderSeq;
@@ -475,7 +516,7 @@ function withPngDpi(dataUrl, dpi){
 
 function canvasDataUrl(){
   try{
-    return withPngDpi($("sigCanvas").toDataURL("image/png"), 96 * SCALE);
+    return withPngDpi($("sigCanvas").toDataURL("image/png"), exportDpi());
   }catch(e){
     // 直接雙擊開啟本機檔案（file://）時，瀏覽器會封鎖輸出圖片
     setStatus("無法產生圖片，請改從網址開啟這個頁面，不要直接開啟 HTML 檔。", true);
@@ -496,7 +537,7 @@ async function copySignature(){
   const url = canvasDataUrl();
   if (!url) return;
   const html =
-    `<div><a href="mailto:${esc(COMPANY.supportEmail)}"><img src="${url}" width="${W}" height="${H}" alt="${esc(altText())}" style="display:block;border:0;width:${W}px;height:${H}px;"></a>` +
+    `<div><a href="mailto:${esc(COMPANY.supportEmail)}"><img src="${url}" width="${displayW()}" height="${displayH()}" alt="${esc(altText())}" style="display:block;border:0;width:${displayW()}px;height:${displayH()}px;"></a>` +
     mailLineHtml() + `</div>`;
   const plain = altText().replaceAll("｜","\n");
   await writeClipboard(html, plain);
@@ -538,13 +579,18 @@ async function downloadPng(){
   const a = document.createElement("a");
   a.href = url;
   const name = $("name1").value.trim().replace(/\s+/g,"-") || "email";
-  a.download = `${name}-signature.png`;
+  a.download = `${name}-signature-${displayW()}.png`;
   a.click();
   setStatus("圖片已下載。");
 }
 
 fields.forEach(id => $(id).addEventListener("input", () => {
   $(id).classList.remove("invalid");
+  render();
+}));
+document.querySelectorAll('input[name="size"]').forEach(r => r.addEventListener("change", () => {
+  sizeKey = r.value;
+  setStatus("");
   render();
 }));
 $("copyBtn").addEventListener("click", copySignature);
