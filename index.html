@@ -61,12 +61,12 @@
 
       <div class="row2">
         <div class="field">
-          <label for="nameZh">中文姓名 <span class="req">*</span></label>
-          <input id="nameZh" placeholder="王小明" autocomplete="off">
+          <label for="name1">姓名 <span class="req">*</span></label>
+          <input id="name1" placeholder="Ming Wang" autocomplete="off">
         </div>
         <div class="field">
-          <label for="nameEn">英文姓名</label>
-          <input id="nameEn" placeholder="Ming Wang" autocomplete="off">
+          <label for="name2">其他名稱</label>
+          <input id="name2" placeholder="王小明" autocomplete="off">
         </div>
       </div>
 
@@ -76,7 +76,7 @@
           <input id="dept" value="Adobe Team" placeholder="Adobe Team" autocomplete="off">
         </div>
         <div class="field">
-          <label for="title">職稱／職務 <span class="req">*</span></label>
+          <label for="title">職稱／職務</label>
           <input id="title" placeholder="業務經理" autocomplete="off">
         </div>
       </div>
@@ -181,7 +181,7 @@ const W = 600, H = 156, SCALE = 2;   // 2 倍解析度輸出，在高解析螢�
 const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif';
 const FONT_EN = '"Noto Sans",' + FONT;   // 英文名斜體用
 const $ = id => document.getElementById(id);
-const fields = ["nameZh","nameEn","dept","title","ext","phone"];
+const fields = ["name1","name2","dept","title","ext","phone"];
 let IMGS = null;
 
 function esc(s){
@@ -229,10 +229,10 @@ async function loadAssets(){
 function data(){
   const v = id => $(id).value.trim();
   return {
-    nameZh: v("nameZh") || "王小明",
-    nameEn: v("nameEn"),
+    name1:  v("name1") || "Ming Wang",   // 主要姓名（粗體大字）
+    name2:  v("name2"),                  // 其他名稱（接在後面的小字）
     dept:   v("dept"),
-    title:  v("title") || "職稱",
+    title:  v("title"),
     ext:    v("ext"),
     phone:  v("phone")
   };
@@ -308,25 +308,28 @@ function drawSignature(canvas){
   const X = L.X;
   const LEFT_MAX = L.logo.x - 12 - X;   // 姓名、職稱不可碰到 Logo
 
-  // 姓名
-  const gap = d.nameEn ? 16 : 0;
-  let zhSize = 25, enSize = 17;
-  c.font = `700 ${zhSize}px ${FONT}`;
-  let zhW = c.measureText(d.nameZh).width;
-  c.font = `italic 400 ${enSize}px ${FONT_EN}`;
-  let enW = d.nameEn ? c.measureText(d.nameEn).width : 0;
-  const total = zhW + gap + enW;
+  // 姓名：主要姓名粗體大字，其他名稱小字接在後面
+  // （其他名稱若是英文用斜體；中文斜體會變形，改用正體）
+  const latin2 = /^[\x20-\x7E\u00C0-\u024F]+$/.test(d.name2);
+  const font2 = size => latin2 ? `italic 400 ${size}px ${FONT_EN}` : `400 ${size}px ${FONT}`;
+  const gap = d.name2 ? 16 : 0;
+  let s1 = 25, s2 = 17;
+  c.font = `700 ${s1}px ${FONT}`;
+  let w1 = c.measureText(d.name1).width;
+  c.font = font2(s2);
+  let w2 = d.name2 ? c.measureText(d.name2).width : 0;
+  const total = w1 + gap + w2;
   if (total > LEFT_MAX){
     const k = LEFT_MAX / total;
-    zhSize *= k; enSize *= k; zhW *= k; enW *= k;
+    s1 *= k; s2 *= k; w1 *= k; w2 *= k;
   }
   c.fillStyle = "#111111";
-  c.font = `700 ${zhSize}px ${FONT}`;
-  c.fillText(d.nameZh, X, 39);
-  if (d.nameEn){
+  c.font = `700 ${s1}px ${FONT}`;
+  c.fillText(d.name1, X, 39);
+  if (d.name2){
     c.fillStyle = "#222222";
-    c.font = `italic 400 ${enSize}px ${FONT_EN}`;
-    c.fillText(d.nameEn, X + zhW + gap, 41);
+    c.font = font2(s2);
+    c.fillText(d.name2, X + w1 + gap, 41);
   }
 
   // 部門 │ 職稱（中間用細直線分隔；部門留空時只顯示職稱）
@@ -397,12 +400,12 @@ function mailLineHtml(){
 async function ensureFonts(){
   if (!document.fonts) return;
   const d = data();
-  const text = [d.nameZh, d.nameEn, d.dept, d.title, d.phone, d.ext, "T#",
+  const text = [d.name1, d.name2, d.dept, d.title, d.phone, d.ext, "T#",
     COMPANY.supportLabel, COMPANY.supportEmail, COMPANY.address, COMPANY.website].join("");
   await Promise.all([
     document.fonts.load(`700 25px "Noto Sans TC"`, text),
     document.fonts.load(`400 12px "Noto Sans TC"`, text),
-    document.fonts.load(`italic 400 17px "Noto Sans"`, d.nameEn || "A")
+    document.fonts.load(`italic 400 17px "Noto Sans"`, d.name2 || "A")
   ]).catch(() => {});
 }
 
@@ -422,12 +425,12 @@ async function renderFinal(){
 
 function validate(){
   let ok = true;
-  for (const id of ["nameZh","title"]){
+  for (const id of ["name1"]){
     const empty = !$(id).value.trim();
     $(id).classList.toggle("invalid", empty);
     if (empty) ok = false;
   }
-  if (!ok) setStatus("請先填寫中文姓名與職稱。", true);
+  if (!ok) setStatus("請先填寫姓名。", true);
   return ok;
 }
 
@@ -448,7 +451,7 @@ function canvasDataUrl(){
 
 function altText(){
   const d = data();
-  return [`${d.nameZh} ${d.nameEn}`.trim(), [d.dept, d.title].filter(Boolean).join("｜"),
+  return [`${d.name1} ${d.name2}`.trim(), [d.dept, d.title].filter(Boolean).join("｜"),
     `T ${d.phone}${d.ext ? " #" + d.ext : ""}`, `${COMPANY.supportLabel} ${COMPANY.supportEmail}`,
     COMPANY.address, COMPANY.website].join("｜");
 }
@@ -500,7 +503,7 @@ async function downloadPng(){
   if (!url) return;
   const a = document.createElement("a");
   a.href = url;
-  const name = $("nameEn").value.trim().replace(/\s+/g,"-") || $("nameZh").value.trim() || "email";
+  const name = $("name1").value.trim().replace(/\s+/g,"-") || "email";
   a.download = `${name}-signature.png`;
   a.click();
   setStatus("圖片已下載。");
