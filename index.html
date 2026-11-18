@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Email 簽名檔產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Sans:ital,wght@1,400&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    color:#111;
+    background:#f3f3f5;
+  }
+  .app{max-width:1120px;margin:0 auto;padding:32px 20px 56px}
+  h1{margin:0 0 20px;font-size:26px;letter-spacing:-.02em}
+  .layout{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
+  .panel{background:#fff;border:1px solid #e7e7e9;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.05);padding:20px}
+  .preview-panel{overflow:auto}
+  .section-title{margin:0 0 14px;font-size:14px;font-weight:700}
+  .field{margin-bottom:13px}
+  label{display:block;margin-bottom:6px;font-size:12px;color:#555}
+  label .req{color:#fa0f00}
+  input{
+    width:100%;height:40px;border:1px solid #d9d9de;border-radius:8px;padding:0 11px;
+    font:inherit;font-size:14px;outline:none;background:#fff;
+  }
+  input:focus{border-color:#999}
+  input.invalid{border-color:#fa0f00}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .buttons{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
+  button{
+    height:42px;border-radius:9px;border:1px solid #d9d9de;background:#fff;
+    font:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  }
+  button.primary{grid-column:1/-1;color:#fff;background:#111;border-color:#111}
+  button:hover{filter:brightness(.97)}
+  .status{min-height:22px;margin-top:10px;font-size:12px;color:#2b6b3d;line-height:1.5}
+  .status.error{color:#c00}
+  .preview-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;font-size:12px;color:#666}
+  .signature-stage{background:#fff;border:1px solid #ededf0;width:fit-content;min-width:602px;padding:0 0 10px}
+  .signature-stage canvas{display:block;width:600px;height:156px}
+  .help{margin-top:16px;padding:14px 15px;border-radius:10px;background:#fafafa;color:#555;font-size:12px;line-height:1.7}
+  .help ol{margin:4px 0 0;padding-left:18px}
+  .help details{margin-top:8px;border-top:1px solid #ececef;padding-top:8px}
+  .help summary{cursor:pointer;font-weight:700;color:#333}
+  .help details[open] summary{margin-bottom:2px}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Email 簽名檔產生器</h1>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="section-title">個人資訊</div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="nameZh">中文姓名 <span class="req">*</span></label>
+          <input id="nameZh" placeholder="王小明" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="nameEn">英文姓名</label>
+          <input id="nameEn" placeholder="Ming Wang" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="dept">部門</label>
+          <input id="dept" value="Adobe Team" placeholder="Adobe Team" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="title">職稱／職務 <span class="req">*</span></label>
+          <input id="title" placeholder="業務經理" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="ext">分機</label>
+          <input id="ext" placeholder="123" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="phone">公司電話</label>
+          <input id="phone" value="+886 2 2371 6000" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button class="primary" id="copyBtn">複製簽名檔</button>
+        <button id="downloadBtn">下載圖片檔</button>
+      </div>
+      <div class="status" id="status"></div>
+
+      <div class="help">
+        <strong>Outlook 設定方式</strong><br>
+        先複製簽名檔，再到 Outlook 貼上。
+
+        <details>
+          <summary>Windows 傳統版 Outlook</summary>
+          <ol>
+            <li>左上角「檔案」→「選項」。</li>
+            <li>左側選「郵件」，再點右邊的「簽名...」。</li>
+            <li>點「新增」，輸入簽名名稱（例如：公司簽名）。</li>
+            <li>在下方編輯區貼上（Ctrl + V）。</li>
+            <li>右側「選擇預設簽名」：新郵件、回覆/轉寄都選這個簽名。</li>
+            <li>點「確定」儲存。</li>
+          </ol>
+        </details>
+
+        <details>
+          <summary>新版 Outlook／網頁版 Outlook</summary>
+          <ol>
+            <li>右上角齒輪「設定」。</li>
+            <li>選「帳戶」→「簽章」。</li>
+            <li>點「新增簽章」，輸入名稱。</li>
+            <li>在編輯區貼上（Ctrl + V）。</li>
+            <li>下方「選取預設簽章」：新郵件、回覆/轉寄都選這個簽名。</li>
+            <li>點「儲存」。</li>
+          </ol>
+        </details>
+
+        <details>
+          <summary>Mac 版 Outlook</summary>
+          <ol>
+            <li>螢幕最上方選單「Outlook」→「設定」。</li>
+            <li>點「簽名」。</li>
+            <li>點左下角「＋」新增，輸入名稱。</li>
+            <li>在編輯區貼上（⌘ + V）。</li>
+            <li>下方「選擇預設簽名」：新郵件、回覆/轉寄都選這個簽名。</li>
+            <li>關閉視窗即自動儲存。</li>
+          </ol>
+        </details>
+      </div>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="preview-label">
+        <span>簽名檔預覽（600 × 156 圖片＋文字連結）</span>
+        <span>收件人點技術信箱即可寄信</span>
+      </div>
+
+      <div class="signature-stage">
+        <canvas id="sigCanvas" width="1200" height="312"></canvas>
+        <div id="mailLine"></div>
+      </div>
+
+      <div class="help">
+        <strong>固定公司資訊：</strong><br>
+        台北市南港區南港路三段 9 號 12 樓<br>
+        https://adbecsp.weblink.com.tw/<br>
+        技術信箱：adbeservice@weblink.com.tw
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const COMPANY = {
+  address: "台北市南港區南港路三段 9 號 12 樓",
+  website: "https://adbecsp.weblink.com.tw/",
+  supportEmail: "adbeservice@weblink.com.tw",
+  supportLabel: "技術信箱",
+  assets: {
+    brand: "assets/weblink x adobe.svg",
+    accent: "assets/pic.svg",
+    phone: "assets/icon-phone.png",
+    pin: "assets/icon-pin.png",
+    web: "assets/icon-web.png",
+    rainbow: "assets/rainbow-line.png"
+  }
+};
+
+const W = 600, H = 156, SCALE = 2;   // 2 倍解析度輸出，在高解析螢幕上也清楚
+const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif';
+const FONT_EN = '"Noto Sans",' + FONT;   // 英文名斜體用
+const $ = id => document.getElementById(id);
+const fields = ["nameZh","nameEn","dept","title","ext","phone"];
+let IMGS = null;
+
+function esc(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+
+function loadImg(src){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("圖片載入失敗：" + src));
+    img.src = src;
+  });
+}
+
+// SVG 若沒有 width/height，部分瀏覽器（如 Firefox）無法畫進 canvas，
+// 這裡依 viewBox 補上尺寸後再載入，原始檔不需修改。
+async function loadAsset(src){
+  if (!/\.svg$/i.test(src)) return loadImg(encodeURI(src));
+  const res = await fetch(encodeURI(src));
+  if (!res.ok) throw new Error("圖片載入失敗：" + src);
+  const doc = new DOMParser().parseFromString(await res.text(), "image/svg+xml");
+  const svg = doc.documentElement;
+  const vb = (svg.getAttribute("viewBox") || "").split(/[\s,]+/).map(Number);
+  if (vb.length === 4 && vb[2] > 0 && vb[3] > 0){
+    const k = 1000 / vb[2];   // 以寬 1000 為基準，維持比例
+    svg.setAttribute("width", vb[2] * k);
+    svg.setAttribute("height", vb[3] * k);
+  }
+  const blob = new Blob([new XMLSerializer().serializeToString(doc)], {type:"image/svg+xml"});
+  const url = URL.createObjectURL(blob);
+  try{ return await loadImg(url); }
+  finally{ setTimeout(() => URL.revokeObjectURL(url), 0); }
+}
+
+async function loadAssets(){
+  const entries = await Promise.all(
+    Object.entries(COMPANY.assets).map(async ([k, src]) => [k, await loadAsset(src)])
+  );
+  IMGS = Object.fromEntries(entries);
+}
+
+function data(){
+  const v = id => $(id).value.trim();
+  return {
+    nameZh: v("nameZh") || "王小明",
+    nameEn: v("nameEn"),
+    dept:   v("dept"),
+    title:  v("title") || "職稱",
+    ext:    v("ext"),
+    phone:  v("phone")
+  };
+}
+
+// 文字太長時自動縮小字級，避免撞到右側欄位
+function fitFont(ctx, text, weight, size, maxWidth, minSize=9){
+  let s = size;
+  ctx.font = `${weight} ${s}px ${FONT}`;
+  while (s > minSize && ctx.measureText(text).width > maxWidth){
+    s -= 0.5;
+    ctx.font = `${weight} ${s}px ${FONT}`;
+  }
+  return s;
+}
+
+// 依原始比例畫 icon，垂直置中於 cy
+function drawIcon(ctx, img, x, cy, h=16){
+  const w = h * img.naturalWidth / img.naturalHeight;
+  ctx.drawImage(img, x, cy - h/2, w, h);
+}
+
+// 版面位置（單位：px，以 600 × 156 為基準，依設計稿量測）
+const LAYOUT = {
+  lineY: 146,                         // 彩虹線位置；裝飾圖只畫在這條線以上
+  art:   { x: 490, y: 48, h: 100,     // 右側裝飾圖，底部貼齊彩虹線，超出右邊的部分會被裁掉
+           fadeStart: 545, fadeEnd: 600, fadeMin: 0 },  // 從 fadeStart 開始向右淡出到 fadeEnd；fadeMin 為最右側殘留濃度（0 = 全白）
+  logo:  { x: 407, y: 6, w: 185 },   // 靠右上角，右側留 8px
+  X: 39,                              // 左欄起點
+  row1: 98.5, row2: 123.5,            // 兩行聯絡資訊的垂直中心
+  midX: 244                           // 中欄（地址、網站）最左位置
+};
+
+function drawSignature(canvas){
+  const d = data();
+  const L = LAYOUT;
+  canvas.width = W * SCALE;
+  canvas.height = H * SCALE;
+  const c = canvas.getContext("2d");
+  c.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  c.textBaseline = "middle";
+
+  // 背景
+  c.fillStyle = "#ffffff";
+  c.fillRect(0, 0, W, H);
+
+  // 右側裝飾圖：只顯示在畫面內、彩虹線以上，右邊與下方自然裁切
+  const ah = L.art.h, aw = ah * IMGS.accent.naturalWidth / IMGS.accent.naturalHeight;
+  // 先畫在暫存畫布上，套用向右淡出的漸層遮罩後再貼回
+  const tmp = document.createElement("canvas");
+  tmp.width = W * SCALE; tmp.height = H * SCALE;
+  const t = tmp.getContext("2d");
+  t.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  t.beginPath(); t.rect(0, 0, W, L.lineY); t.clip();
+  t.drawImage(IMGS.accent, L.art.x, L.art.y, aw, ah);
+  if (L.art.fadeEnd > L.art.fadeStart){
+    const g = t.createLinearGradient(L.art.fadeStart, 0, L.art.fadeEnd, 0);
+    g.addColorStop(0, "rgba(0,0,0,1)");
+    g.addColorStop(1, `rgba(0,0,0,${L.art.fadeMin})`);
+    t.globalCompositeOperation = "destination-in";
+    t.fillStyle = g;
+    t.fillRect(0, 0, W, H);
+  }
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.drawImage(tmp, 0, 0);
+  c.restore();
+
+  // 左側紅條
+  c.fillStyle = "#fa0f00";
+  c.fillRect(0, 26, 14, 46);
+
+  const X = L.X;
+  const LEFT_MAX = L.logo.x - 12 - X;   // 姓名、職稱不可碰到 Logo
+
+  // 姓名
+  const gap = d.nameEn ? 16 : 0;
+  let zhSize = 25, enSize = 17;
+  c.font = `700 ${zhSize}px ${FONT}`;
+  let zhW = c.measureText(d.nameZh).width;
+  c.font = `italic 400 ${enSize}px ${FONT_EN}`;
+  let enW = d.nameEn ? c.measureText(d.nameEn).width : 0;
+  const total = zhW + gap + enW;
+  if (total > LEFT_MAX){
+    const k = LEFT_MAX / total;
+    zhSize *= k; enSize *= k; zhW *= k; enW *= k;
+  }
+  c.fillStyle = "#111111";
+  c.font = `700 ${zhSize}px ${FONT}`;
+  c.fillText(d.nameZh, X, 39);
+  if (d.nameEn){
+    c.fillStyle = "#222222";
+    c.font = `italic 400 ${enSize}px ${FONT_EN}`;
+    c.fillText(d.nameEn, X + zhW + gap, 41);
+  }
+
+  // 部門 │ 職稱（中間用細直線分隔；部門留空時只顯示職稱）
+  const sepGap = 10;
+  const parts = [d.dept, d.title].filter(Boolean);
+  const sepW = (parts.length - 1) * (sepGap * 2 + 1);
+  const tSize = fitFont(c, parts.join(""), 400, 13.5, LEFT_MAX - sepW);
+  c.font = `400 ${tSize}px ${FONT}`;
+  let tx = X;
+  parts.forEach((t, i) => {
+    if (i > 0){
+      tx += sepGap;
+      c.fillStyle = "#9a9a9a";
+      c.fillRect(tx, 66.5 - 7, 1, 14);
+      tx += 1 + sepGap;
+    }
+    c.fillStyle = "#111111";
+    c.fillText(t, tx, 66.5);
+    tx += c.measureText(t).width;
+  });
+
+  // 左欄：電話、技術信箱
+  const FS = 12.5;   // 聯絡資訊字級
+  const phoneText = `T ${d.phone}${d.ext ? " #" + d.ext : ""}`;
+  c.font = `400 ${FS}px ${FONT}`;
+  c.fillStyle = "#111111";
+  drawIcon(c, IMGS.phone, X + 1, L.row1);
+  c.fillText(phoneText, X + 24.5, L.row1);
+  const phoneEnd = X + 24.5 + c.measureText(phoneText).width;
+
+  c.font = `700 ${FS}px ${FONT}`;
+  c.fillStyle = "#fa0f00";
+  c.fillText(COMPANY.supportLabel, X + 1, L.row2);
+  const mailX = X + 1 + c.measureText(COMPANY.supportLabel).width + 6;
+  c.font = `400 ${FS}px ${FONT}`;
+  c.fillStyle = "#111111";
+  c.fillText(COMPANY.supportEmail, mailX, L.row2);
+  const mailEnd = mailX + c.measureText(COMPANY.supportEmail).width;
+
+  // 中欄：地址、網站（左欄較長時自動往右讓位，且不疊到裝飾圖）
+  const MX = Math.max(L.midX, Math.max(phoneEnd, mailEnd) + 12);
+  const MT = MX + 20;
+  const midMax = L.art.x + 4 - MT;
+  drawIcon(c, IMGS.pin, MX, L.row1);
+  c.font = `400 ${fitFont(c, COMPANY.address, 400, FS, midMax)}px ${FONT}`;
+  c.fillStyle = "#111111";
+  c.fillText(COMPANY.address, MT, L.row1);
+  drawIcon(c, IMGS.web, MX, L.row2, 15);
+  c.font = `400 ${fitFont(c, COMPANY.website, 400, FS, midMax)}px ${FONT}`;
+  c.fillText(COMPANY.website, MT, L.row2);
+
+  // 右上 Logo
+  const bh = L.logo.w * IMGS.brand.naturalHeight / IMGS.brand.naturalWidth;
+  c.drawImage(IMGS.brand, L.logo.x, L.logo.y, L.logo.w, bh);
+
+  // 底部彩虹線
+  c.drawImage(IMGS.rainbow, 0, L.lineY, W, 5);
+}
+
+function mailLineHtml(){
+  const m = esc(COMPANY.supportEmail);
+  return `<p style="margin:6px 0 0 0;font-family:Arial,'Microsoft JhengHei',sans-serif;font-size:12px;line-height:18px;color:#555555;">` +
+    `${esc(COMPANY.supportLabel)}：<a href="mailto:${m}" style="color:#fa0f00;text-decoration:underline;">${m}</a></p>`;
+}
+
+// 思源黑體（Noto Sans TC）由 Google Fonts 依用到的字分批下載，
+// 畫圖前先確認目前文字需要的字型都已載入，避免輸出時字型跑掉。
+async function ensureFonts(){
+  if (!document.fonts) return;
+  const d = data();
+  const text = [d.nameZh, d.nameEn, d.dept, d.title, d.phone, d.ext, "T#",
+    COMPANY.supportLabel, COMPANY.supportEmail, COMPANY.address, COMPANY.website].join("");
+  await Promise.all([
+    document.fonts.load(`700 25px "Noto Sans TC"`, text),
+    document.fonts.load(`400 12px "Noto Sans TC"`, text),
+    document.fonts.load(`italic 400 17px "Noto Sans"`, d.nameEn || "A")
+  ]).catch(() => {});
+}
+
+let renderSeq = 0;
+function render(){
+  if (!IMGS) return;
+  drawSignature($("sigCanvas"));
+  $("mailLine").innerHTML = mailLineHtml();
+  const seq = ++renderSeq;
+  ensureFonts().then(() => { if (seq === renderSeq) drawSignature($("sigCanvas")); });
+}
+
+async function renderFinal(){
+  await ensureFonts();
+  drawSignature($("sigCanvas"));
+}
+
+function validate(){
+  let ok = true;
+  for (const id of ["nameZh","title"]){
+    const empty = !$(id).value.trim();
+    $(id).classList.toggle("invalid", empty);
+    if (empty) ok = false;
+  }
+  if (!ok) setStatus("請先填寫中文姓名與職稱。", true);
+  return ok;
+}
+
+function setStatus(msg, isError=false){
+  $("status").textContent = msg;
+  $("status").classList.toggle("error", isError);
+}
+
+function canvasDataUrl(){
+  try{
+    return $("sigCanvas").toDataURL("image/png");
+  }catch(e){
+    // 直接雙擊開啟本機檔案（file://）時，瀏覽器會封鎖輸出圖片
+    setStatus("無法產生圖片，請改從網址開啟這個頁面，不要直接開啟 HTML 檔。", true);
+    return null;
+  }
+}
+
+function altText(){
+  const d = data();
+  return [`${d.nameZh} ${d.nameEn}`.trim(), [d.dept, d.title].filter(Boolean).join("｜"),
+    `T ${d.phone}${d.ext ? " #" + d.ext : ""}`, `${COMPANY.supportLabel} ${COMPANY.supportEmail}`,
+    COMPANY.address, COMPANY.website].join("｜");
+}
+
+async function copySignature(){
+  if (!validate()) return;
+  await renderFinal();
+  const url = canvasDataUrl();
+  if (!url) return;
+  const html =
+    `<div><a href="mailto:${esc(COMPANY.supportEmail)}"><img src="${url}" width="${W}" height="${H}" alt="${esc(altText())}" style="display:block;border:0;width:${W}px;height:${H}px;"></a>` +
+    mailLineHtml() + `</div>`;
+  const plain = altText().replaceAll("｜","\n");
+  await writeClipboard(html, plain);
+  setStatus("已複製，到 Outlook 簽名設定貼上即可。");
+}
+
+
+async function writeClipboard(html, plain){
+  try{
+    if (navigator.clipboard && window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([html], {type:"text/html"}),
+        "text/plain": new Blob([plain], {type:"text/plain"})
+      })]);
+      return;
+    }
+    throw new Error("ClipboardItem unavailable");
+  }catch(e){
+    const temp = document.createElement("div");
+    temp.contentEditable = "true";
+    temp.style.cssText = "position:fixed;left:-99999px;";
+    temp.innerHTML = html;
+    document.body.appendChild(temp);
+    const range = document.createRange();
+    range.selectNodeContents(temp);
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    document.execCommand("copy");
+    sel.removeAllRanges();
+    temp.remove();
+  }
+}
+
+async function downloadPng(){
+  if (!validate()) return;
+  await renderFinal();
+  const url = canvasDataUrl();
+  if (!url) return;
+  const a = document.createElement("a");
+  a.href = url;
+  const name = $("nameEn").value.trim().replace(/\s+/g,"-") || $("nameZh").value.trim() || "email";
+  a.download = `${name}-signature.png`;
+  a.click();
+  setStatus("圖片已下載。");
+}
+
+fields.forEach(id => $(id).addEventListener("input", () => {
+  $(id).classList.remove("invalid");
+  render();
+}));
+$("copyBtn").addEventListener("click", copySignature);
+$("downloadBtn").addEventListener("click", downloadPng);
+
+(async () => {
+  try{
+    await loadAssets();
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    render();
+  }catch(e){
+    setStatus(e.message, true);
+  }
+})();
+</script>
+</body>
+</html>
