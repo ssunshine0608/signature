@@ -439,9 +439,43 @@ function setStatus(msg, isError=false){
   $("status").classList.toggle("error", isError);
 }
 
+// 在 PNG 裡寫入解析度（pHYs）。圖片實際是 2 倍像素（1200 寬），
+// 標成 96 × SCALE DPI 後，Outlook／Word 會自動以 600 寬顯示，不需手動縮小（手動縮小會變糊）。
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function withPngDpi(dataUrl, dpi){
+  const bin = atob(dataUrl.split(",")[1]);
+  const src = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+  const ppm = Math.round(dpi / 0.0254);           // 每公尺像素數
+  const chunk = new Uint8Array(21);                // 長度 4 + 類型 4 + 資料 9 + CRC 4
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9);
+  chunk.set([0x70, 0x48, 0x59, 0x73], 4);          // "pHYs"
+  dv.setUint32(8, ppm); dv.setUint32(12, ppm); chunk[16] = 1;   // 單位：公尺
+  dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+  const at = 33;                                   // PNG 簽名 8 + IHDR 區塊 25 之後
+  const out = new Uint8Array(src.length + chunk.length);
+  out.set(src.subarray(0, at)); out.set(chunk, at); out.set(src.subarray(at), at + chunk.length);
+  let s = "";
+  for (let i = 0; i < out.length; i += 0x8000) s += String.fromCharCode.apply(null, out.subarray(i, i + 0x8000));
+  return "data:image/png;base64," + btoa(s);
+}
+
 function canvasDataUrl(){
   try{
-    return $("sigCanvas").toDataURL("image/png");
+    return withPngDpi($("sigCanvas").toDataURL("image/png"), 96 * SCALE);
   }catch(e){
     // 直接雙擊開啟本機檔案（file://）時，瀏覽器會封鎖輸出圖片
     setStatus("無法產生圖片，請改從網址開啟這個頁面，不要直接開啟 HTML 檔。", true);
