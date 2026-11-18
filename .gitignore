@@ -3,3 +3,6 @@
 
 # macOS 系統檔
 .DS_Store
+
+# 打包給他人的壓縮檔
+*.zip

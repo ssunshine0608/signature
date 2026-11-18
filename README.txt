@@ -1,36 +1,74 @@
-Adobe Team Email 簽名檔產生器
+Email 簽名檔產生器
 
-檔案：
-- index.html
-- assets/weblink x adobe.svg（右上 Logo）
-- assets/pic.svg（右下裝飾圖）
-- assets/icon-phone.png
-- assets/icon-pin.png
-- assets/icon-web.png
-- assets/rainbow-line.png
-（assets/icon-mail.png 目前沒有使用）
+同事在網頁填寫姓名、部門、職稱、分機，即可產生公司統一格式的 Email 簽名，
+複製後貼到 Outlook 簽名設定使用。
 
-簽名檔組成：
+目前測試網址：https://ssunshine0608.github.io/signature/
+原始碼：https://github.com/ssunshine0608/signature
+
+
+========================================
+架設需求（給 IT）
+========================================
+
+- 純靜態網頁：只有 index.html 和 assets/ 資料夾。
+  不需要後端程式、資料庫、PHP 或 Node.js，任何能放靜態檔案的空間都可以
+  （公司網站主機、IIS、Nginx、Apache、NAS 網頁服務、GitHub Pages 等）。
+- 必須使用 HTTPS 網址。
+  「複製簽名檔」用到瀏覽器的剪貼簿功能，瀏覽器只在 HTTPS 頁面開放這個功能。
+- 不能直接雙擊 index.html 開啟（file://），瀏覽器會封鎖圖片輸出。
+- 對外連線：網頁會從 Google Fonts（fonts.googleapis.com、fonts.gstatic.com）
+  載入思源黑體。若公司網路擋這兩個網域，網頁仍可使用，但字型會改用電腦內建字型，
+  排版可能略有差異。
+- 資料不會上傳：所有圖片都在使用者的瀏覽器內產生，伺服器不會收到或儲存任何個人資料。
+- 檔名 assets/weblink x adobe.svg 含空白，一般伺服器都能正常提供；
+  若上傳工具不接受空白，改檔名後需同步修改 index.html 裡 COMPANY.assets.brand。
+- 本機測試：在專案資料夾執行 python3 -m http.server，再開 http://localhost:8000
+
+
+========================================
+檔案
+========================================
+
+- index.html                      網頁本體（含所有程式與樣式）
+- assets/weblink x adobe.svg      右上 Logo
+- assets/pic.svg                  右下裝飾圖
+- assets/icon-phone.png           電話小圖示
+- assets/icon-pin.png             地址小圖示
+- assets/icon-web.png             網站小圖示
+- assets/rainbow-line.png         底部彩虹線
+- assets/icon-mail.png            目前沒有使用
+
+
+========================================
+簽名檔內容
+========================================
+
 - 一張簽名圖片，可選兩種尺寸：標準版 450×117、大版 600×156。
   圖片實際像素皆為 1200×312，檔案內依尺寸寫入 256／192 DPI，
-  Outlook 會自動以對應寬度顯示，不需手動縮小。內容含姓名、職稱、電話分機、
-  技術信箱、公司地址、網站。字型為思源黑體（Noto Sans TC，由 Google Fonts 載入）。
-- 各元素位置集中在 index.html 的 LAYOUT 設定，要微調位置改那裡即可。
-- 兩種尺寸設定在 index.html 的 SIZES，排版本身以 600×156 為基準等比縮放。
+  Outlook 會自動以對應寬度顯示，不需手動縮小。
+- 圖片內容：姓名、其他名稱、部門｜職稱、電話分機、技術信箱、公司地址、網站。
 - 圖片下方一行可點擊的文字「技術信箱：adbeservice@weblink.com.tw」，
   收件人的信箱擋圖片時，仍看得到、點得到技術信箱。
 
-使用方式：
-1. 整個資料夾部署到 Netlify / GitHub Pages 等 HTTPS 網址。
-2. 同事開啟網頁，填寫姓名（必填，粗體大字）、其他名稱、部門、職稱、分機（皆選填）。
-3. Outlook：按「複製簽名檔」，到簽名設定貼上。
+
+========================================
+使用方式（同事）
+========================================
+
+1. 開啟網頁，填寫姓名（必填）、其他名稱、部門、職稱、分機（選填）。
+2. 選擇圖片尺寸：標準版或大版。
+3. 點「複製簽名檔」，依網頁上的步驟貼到 Outlook 簽名設定。
 4. 需要單獨的圖片檔時，可用「下載圖片檔」。
 
-注意：
-- 不要直接雙擊 index.html 開啟，瀏覽器會封鎖圖片輸出。請用部署後的網址，
-  或在本機用 `python3 -m http.server` 開啟。
-- 技術信箱、地址、網站寫在 index.html 最上方的 COMPANY 設定，改一次全員適用。
-- Logo 與裝飾圖已換成 SVG 向量檔（文字已轉外框），輸出清晰。
-  SVG 不需設定寬高，程式會依 viewBox 自動處理。
-- 小圖示（電話、地址、網站）與彩虹線仍是從試作圖裁切的低解析 PNG，
-  之後可換成 SVG，並修改 index.html 裡 COMPANY.assets 的檔名。
+
+========================================
+維護
+========================================
+
+- 技術信箱、地址、網站：index.html 裡的 COMPANY 設定，改一次全員適用。
+- 各元素位置：index.html 裡的 LAYOUT 設定（以 600×156 為基準）。
+- 兩種尺寸：index.html 裡的 SIZES 設定。
+- Logo 與裝飾圖是 SVG 向量檔（文字已轉外框），換圖時直接覆蓋同名檔案即可。
+- 小圖示與彩虹線是低解析 PNG，之後可換成 SVG，並修改 COMPANY.assets 的檔名。
+- 修改後同事需重新產生並貼上簽名，已貼在 Outlook 的舊簽名不會自動更新。
