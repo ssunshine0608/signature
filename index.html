@@ -19,7 +19,7 @@
   h1{margin:0 0 20px;font-size:26px;letter-spacing:-.02em}
   .layout{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
   .panel{background:#fff;border:1px solid #e7e7e9;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.05);padding:20px}
-  .preview-panel{overflow:auto}
+  .preview-panel{overflow:auto;position:sticky;top:20px}
   .section-title{margin:0 0 14px;font-size:14px;font-weight:700}
   .field{margin-bottom:13px}
   label{display:block;margin-bottom:6px;font-size:12px;color:#555}
@@ -50,16 +50,32 @@
   .seg label{margin:0;cursor:pointer}
   .seg input{position:absolute;opacity:0;width:1px;height:1px}
   .seg span{display:block;padding:9px 11px;border:1px solid #d9d9de;border-radius:8px;font-size:14px;color:#111;background:#fff}
+  .seg.seg3{grid-template-columns:1fr 1fr 1fr}
+  .seg.seg3 span{padding:8px 6px;text-align:center;font-size:13px}
+  .seg + input{margin-top:8px}
   .seg small{display:block;margin-top:2px;font-size:11px;font-weight:400;color:#888}
   .seg input:checked + span{border-color:#555;background:#555;color:#fff}
   .seg input:checked + span small{color:#ddd}
   .seg input:focus-visible + span{outline:2px solid #999;outline-offset:2px}
+  .custom{margin-bottom:13px}
+  .custom summary{cursor:pointer;padding:11px 12px;border-radius:10px;background:#b30d0d;color:#fff;font-size:13px;font-weight:700}
+  .custom summary:hover{background:#9e0b0b}
+  .custom summary .hint{font-weight:400;color:rgba(255,255,255,.85)}
+  .custom[open] summary{margin-bottom:12px}
+  .presets{display:flex;flex-wrap:wrap;gap:6px}
+  .preset{display:inline-flex;align-items:center;gap:3px;height:30px;padding:0 9px;border-radius:7px;font-size:12px;font-weight:400}
+  .preset i{display:inline-block;width:11px;height:11px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+  .preset i:first-child{border-radius:3px;margin-right:2px}
+  .colors{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+  .colors label{margin:0;font-size:11px;color:#555;text-align:center}
+  .colors input{display:block;height:34px;margin-top:4px;padding:2px;cursor:pointer}
+  .link-btn{height:auto;padding:0;border:0;background:none;color:#666;font-size:12px;font-weight:400;text-decoration:underline}
   .help{margin-top:16px;padding:14px 15px;border-radius:10px;background:#fafafa;color:#555;font-size:12px;line-height:1.7}
   .help ol{margin:4px 0 0;padding-left:18px}
   .help details{margin-top:8px;border-top:1px solid #ececef;padding-top:8px}
   .help summary{cursor:pointer;font-weight:700;color:#333}
   .help details[open] summary{margin-bottom:2px}
-  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}.preview-panel{position:static}}
 </style>
 </head>
 <body>
@@ -118,6 +134,42 @@
           <label><input type="radio" name="size" value="large"><span>大版<small>600 × 258</small></span></label>
         </div>
       </div>
+
+      <div class="field">
+        <label>圖片樣式</label>
+        <div class="seg" role="radiogroup" aria-label="圖片樣式">
+          <label><input type="radio" name="format" value="png" checked><span>靜態<small>PNG</small></span></label>
+          <label><input type="radio" name="format" value="gif"><span>動畫<small>動態按鈕GIF</small></span></label>
+        </div>
+      </div>
+
+      <details class="custom">
+        <summary>自訂橫幅與連結<span class="hint">（可換上當期促銷資訊）</span></summary>
+        <div class="field">
+          <label for="bannerSub">橫幅小字</label>
+          <input id="bannerSub" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="link">點圖片開啟的網址</label>
+          <div class="seg seg3" role="radiogroup" aria-label="點圖片開啟的網址">
+            <label><input type="radio" name="linkType" value="site" checked><span>官網</span></label>
+            <label><input type="radio" name="linkType" value="reseller"><span>經銷商名錄</span></label>
+            <label><input type="radio" name="linkType" value="custom"><span>自訂</span></label>
+          </div>
+          <input id="link" inputmode="url" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>配色</label>
+          <div class="presets" id="presets"></div>
+        </div>
+        <div class="colors">
+          <label>底色<input type="color" id="cBg"></label>
+          <label>圓形 1<input type="color" id="cC1"></label>
+          <label>圓形 2<input type="color" id="cC2"></label>
+          <label>文字<input type="color" id="cText"></label>
+        </div>
+        <button type="button" class="link-btn" id="resetCustom">還原預設</button>
+      </details>
 
       <div class="buttons">
         <button class="primary" id="copyBtn">複製簽名檔</button>
@@ -204,7 +256,17 @@ const COMPANY = {
   supportEmail: "adbeservice@weblink.com.tw",
   supportLabel: "技術信箱",
   lineLabel: ["Adobe展碁國際", "LINE@官方帳號"],   // QR Code 左邊的兩行字
-  bannerButton: "立即查看 →",                       // 底部橫幅按鈕文字
+  bannerButton: "立即查看 →",                       // 底部橫幅按鈕文字（官網、自訂網址時）
+  // 點圖片可選的固定網址；選經銷商名錄時，橫幅按鈕文字跟著改
+  links: {
+    site:     { url: "https://adbecsp.weblink.com.tw/",          button: "立即查看 →" },
+    reseller: { url: "https://adbecsp.weblink.com.tw/reseller/", button: "聯繫經銷商 →" }
+  },
+  // 底部橫幅的預設小字與配色（同事可在「自訂橫幅與連結」修改，按「還原預設」回到這裡的設定）
+  banner: {
+    sub: "精選活動・產品新知・應用方案・優惠情報",
+    colors: { bg: "#171717", c1: "#f72545", c2: "#7864dd", text: "#ffffff" }
+  },
   assets: {
     brand: "assets/weblink x adobe.svg",
     accent: "assets/pic.svg",
@@ -232,7 +294,15 @@ const exportDpi = () => 96 * (W * SCALE) / displayW();   // 標準版 256 DPI、
 const FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif';
 const FONT_EN = '"Noto Sans",' + FONT;   // 英文名斜體用
 const $ = id => document.getElementById(id);
-const fields = ["name1","name2","dept","title","ext","phone"];
+const fields = ["name1","name2","dept","title","ext","phone","bannerSub","link","cBg","cC1","cC2","cText"];
+// 橫幅配色快速選項（文字一律白色）
+const PRESETS = [
+  { name: "經典黑", bg: "#171717", c1: "#f72545", c2: "#7864dd" },
+  { name: "深藏青", bg: "#1e1f3b", c1: "#f72545", c2: "#7864dd" },
+  { name: "藏青藍", bg: "#1b2040", c1: "#ff4d6d", c2: "#3fa9f5" },
+  { name: "深紫橘", bg: "#2a1f5c", c1: "#e6266f", c2: "#ff9a3c" },
+  { name: "藍綠",   bg: "#0f2b33", c1: "#f72545", c2: "#2bb7a6" }
+];
 let IMGS = null;
 
 function esc(s){
@@ -252,11 +322,18 @@ function loadImg(src){
 
 // SVG 若沒有 width/height，部分瀏覽器（如 Firefox）無法畫進 canvas，
 // 這裡依 viewBox 補上尺寸後再載入，原始檔不需修改。
-async function loadAsset(src){
-  if (!/\.svg$/i.test(src)) return loadImg(encodeURI(src));
+async function fetchText(src){
   const res = await fetch(encodeURI(src));
   if (!res.ok) throw new Error("圖片載入失敗：" + src);
-  const doc = new DOMParser().parseFromString(await res.text(), "image/svg+xml");
+  return res.text();
+}
+
+async function loadAsset(src){
+  if (!/\.svg$/i.test(src)) return loadImg(encodeURI(src));
+  return svgImage(new DOMParser().parseFromString(await fetchText(src), "image/svg+xml"));
+}
+
+async function svgImage(doc){
   const svg = doc.documentElement;
   // SVG 內未轉外框的文字（例如橫幅按鈕）改由程式以網頁字型畫出，避免字型不同
   doc.querySelectorAll("text").forEach(t => t.remove());
@@ -273,10 +350,52 @@ async function loadAsset(src){
 }
 
 async function loadAssets(){
-  const entries = await Promise.all(
-    Object.entries(COMPANY.assets).map(async ([k, src]) => [k, await loadAsset(src)])
-  );
+  const list = Object.entries(COMPANY.assets).filter(([k]) => k !== "banner");
+  const [entries, raw] = await Promise.all([
+    Promise.all(list.map(async ([k, src]) => [k, await loadAsset(src)])),
+    fetchText(COMPANY.assets.banner)
+  ]);
+  BANNER_RAW = raw;
   IMGS = Object.fromEntries(entries);
+  await ensureBanner();
+}
+
+// 底部橫幅：依選擇的顏色改 SVG 的底色、兩個圓、標題字色；小字由程式畫，所以從 SVG 移除
+let BANNER_RAW = null, bannerKey = "";
+async function buildBanner(col){
+  const doc = new DOMParser().parseFromString(BANNER_RAW, "image/svg+xml");
+  const paint = (sel, color) => doc.querySelectorAll(sel).forEach(e => e.style.fill = color);
+  doc.querySelectorAll("path.cls-6").forEach(e => e.remove());   // 原本的小字（已轉外框）
+  paint("rect.cls-5", col.bg);
+  paint("ellipse.cls-8", col.c1);
+  paint("ellipse.cls-3", col.c2);
+  paint("g.cls-4 path.cls-7", col.text);                          // 標題「探索 Adobe 最新資訊」
+  doc.querySelectorAll("path.cls-7").forEach(e => { if (!e.closest("g.cls-4")) e.remove(); });   // 白色按鈕改由程式畫，寬度隨文字調整
+  return svgImage(doc);
+}
+async function ensureBanner(){
+  const col = data().colors, key = JSON.stringify(col);
+  if (key === bannerKey && IMGS.banner) return;
+  const img = await buildBanner(col);
+  if (JSON.stringify(data().colors) !== key) return ensureBanner();   // 等待期間又改了顏色
+  IMGS.banner = img;
+  bannerKey = key;
+}
+
+// 橫幅按鈕文字：網址是經銷商名錄等固定選項時用該選項的文字，其他用預設
+function buttonText(link){
+  const hit = Object.values(COMPANY.links).find(o => o.url === link);
+  return hit ? hit.button : COMPANY.bannerButton;
+}
+
+// 網址沒寫 http(s):// 時自動補上；格式錯誤回傳 null
+function normalizeUrl(u){
+  if (!u) return COMPANY.website;
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try{
+    const url = new URL(u);
+    return url.hostname.includes(".") ? url.href : null;
+  }catch(e){ return null; }
 }
 
 function data(){
@@ -288,7 +407,11 @@ function data(){
     title:  v("title"),
     ext:    v("ext"),
     phone:  v("phone"),
-    address: office().address
+    address: office().address,
+    sub:    v("bannerSub"),              // 橫幅小字
+    link:   normalizeUrl(v("link")),     // 點圖片開啟的網址
+    button: buttonText(normalizeUrl(v("link"))),
+    colors: { bg: $("cBg").value, c1: $("cC1").value, c2: $("cC2").value, text: $("cText").value }
   };
 }
 
@@ -325,7 +448,7 @@ const LAYOUT = {
   lineText: { x: 276, gap: 16.5, size: 12.75, weight: 500, color: "#34b430" }  // QR Code 左邊的綠色字；第二行與地址置底對齊，gap 為行距
 };
 
-function drawSignature(canvas){
+function drawSignature(canvas, pressed = false){   // pressed：動畫版第二格（按鈕按下、箭頭右移）
   const d = data();
   const L = LAYOUT;
   canvas.width = W * SCALE;
@@ -451,10 +574,42 @@ function drawSignature(canvas){
   c.drawImage(IMGS.banner, 0, L.bannerY, W, bannerH);
   const k = W / 640;   // 橫幅 SVG 原始寬度 640
   c.fillStyle = "#171717";
-  c.font = `700 ${14.4 * k}px ${FONT}`;
-  c.textAlign = "center";
-  c.fillText(COMPANY.bannerButton, 536.7 * k, L.bannerY + 49 * k);
-  c.textAlign = "left";
+  // 白色按鈕：原設計寬 107、高 37（SVG 單位），文字較長時往左加寬，左右各留 btnPad
+  const btnPad = 22;
+  c.font = `700 ${fitFont(c, d.button, 700, 14.4 * k, 140 * k)}px ${FONT}`;
+  const btnW = Math.max(107 * k, c.measureText(d.button).width + btnPad * 2 * k), btnH = 37 * k;
+  // 動畫版第二格依 BTN_FRAME2 的樣式畫，第一格一律白底黑字
+  const st = pressed ? BTN_FRAME2[btnStyle2] : BTN_NORMAL;
+  const btnX = 590.23 * k - btnW, btnY = L.bannerY + 30.46 * k + (st.push || 0);
+  const pill = (pad) => { c.beginPath(); c.roundRect(btnX - pad, btnY - pad, btnW + pad * 2, btnH + pad * 2, (btnH + pad * 2) / 2); };
+  c.save();
+  if (st.scale){   // 以按鈕中心放大
+    const cx = btnX + btnW / 2, cy = btnY + btnH / 2;
+    c.translate(cx, cy); c.scale(st.scale, st.scale); c.translate(-cx, -cy);
+  }
+  if (st.glow){ c.fillStyle = st.glow; pill(4); c.fill(); }
+  if (st.fill){ c.fillStyle = st.fill; pill(0); c.fill(); }
+  if (st.stroke){ c.strokeStyle = st.stroke; c.lineWidth = 1.5; pill(-0.75); c.stroke(); }
+  // 文字與箭頭分開畫，第二格箭頭往右移
+  const tw = c.measureText(d.button).width, tx0 = btnX + btnW / 2 - tw / 2, ty = L.bannerY + 49 * k + (st.push || 0);
+  const m = d.button.match(/^(.*?)(\s*→)$/);
+  c.fillStyle = st.text;
+  if (m){
+    c.fillText(m[1], tx0, ty);
+    c.fillStyle = st.arrow || st.text;
+    c.fillText(m[2], tx0 + c.measureText(m[1]).width + (st.dx || 0), ty);
+  } else {
+    c.fillText(d.button, tx0, ty);
+  }
+  c.restore();
+  // 橫幅小字（可自訂；太長時自動縮小，不碰到右邊按鈕）
+  if (d.sub){
+    c.fillStyle = d.colors.text;
+    c.globalAlpha = 0.87;
+    c.font = `400 ${fitFont(c, d.sub, 400, 13.9 * k, (470 - 25) * k)}px ${FONT}`;
+    c.fillText(d.sub, 25 * k, L.bannerY + 67.2 * k);
+    c.globalAlpha = 1;
+  }
 
   // 彩虹線（蓋在裝飾圖與橫幅的交界）
   c.drawImage(IMGS.rainbow, 0, L.lineY, W, L.rainbowH);
@@ -472,7 +627,8 @@ async function ensureFonts(){
   if (!document.fonts) return;
   const d = data();
   const text = [d.name1, d.name2, d.dept, d.title, d.phone, d.ext, "T#",
-    d.address, ...COMPANY.lineLabel, COMPANY.bannerButton].join("");
+    d.address, d.sub, ...COMPANY.lineLabel, COMPANY.bannerButton,
+    ...Object.values(COMPANY.links).map(o => o.button)].join("");
   await Promise.all([
     document.fonts.load(`700 25px "Noto Sans TC"`, text),
     document.fonts.load(`400 12px "Noto Sans TC"`, text),
@@ -495,11 +651,13 @@ function render(){
   drawSignature($("sigCanvas"));
   $("mailLine").innerHTML = mailLineHtml();
   const seq = ++renderSeq;
-  ensureFonts().then(() => { if (seq === renderSeq) drawSignature($("sigCanvas")); });
+  Promise.all([ensureFonts(), ensureBanner()])
+    .then(() => { if (seq === renderSeq) drawSignature($("sigCanvas")); })
+    .catch(e => setStatus(e.message, true));
 }
 
 async function renderFinal(){
-  await ensureFonts();
+  await Promise.all([ensureFonts(), ensureBanner()]);
   drawSignature($("sigCanvas"));
 }
 
@@ -510,8 +668,14 @@ function validate(){
     $(id).classList.toggle("invalid", empty);
     if (empty) ok = false;
   }
-  if (!ok) setStatus("請先填寫姓名。", true);
-  return ok;
+  if (!ok){ setStatus("請先填寫姓名。", true); return false; }
+  if (!data().link){
+    $("link").classList.add("invalid");
+    $("link").closest("details").open = true;
+    setStatus("網址格式不正確，請確認「點圖片開啟的網址」。", true);
+    return false;
+  }
+  return true;
 }
 
 function setStatus(msg, isError=false){
@@ -567,7 +731,7 @@ function canvasDataUrl(){
 function altText(){
   const d = data();
   return [`${d.name1} ${d.name2}`.trim(), [d.dept, d.title].filter(Boolean).join("｜"),
-    `T ${d.phone}${d.ext ? " #" + d.ext : ""}`, d.address, COMPANY.website].join("｜");
+    `T ${d.phone}${d.ext ? " #" + d.ext : ""}`, d.address, d.link || COMPANY.website].join("｜");
 }
 
 // 純文字版本（貼到不支援圖片的地方時使用）
@@ -575,17 +739,31 @@ function plainText(){
   return [altText().replaceAll("｜", "\n"), `${COMPANY.supportLabel}：${COMPANY.supportEmail}`].join("\n");
 }
 
+let formatKey = "png";   // png：靜態圖；gif：動畫
+
+// 依選擇的圖片樣式產生圖片網址（data URL），失敗時回傳 null
+async function imageUrl(){
+  if (formatKey !== "gif"){
+    await renderFinal();
+    return canvasDataUrl();
+  }
+  setStatus("正在產生動畫…");
+  await new Promise(r => setTimeout(r, 30));   // 讓狀態文字先顯示
+  try{ return bytesToDataUrl(await makeGif(), "image/gif"); }
+  catch(e){ setStatus("無法產生動畫，請改從網址開啟這個頁面，不要直接開啟 HTML 檔。", true); return null; }
+}
+
 async function copySignature(){
   if (!validate()) return;
-  await renderFinal();
-  const url = canvasDataUrl();
+  const url = await imageUrl();
   if (!url) return;
-  const html =
-    `<div><a href="${esc(COMPANY.website)}"><img src="${url}" width="${displayW()}" height="${displayH()}" alt="${esc(altText())}" style="display:block;border:0;width:${displayW()}px;height:${displayH()}px;"></a>` +
-    mailLineHtml() + `</div>`;
-  const plain = plainText();
-  await writeClipboard(html, plain);
+  await writeClipboard(signatureHtml(url), plainText());
   setStatus("已複製，到 Outlook 簽名設定貼上即可。");
+}
+
+function signatureHtml(url){
+  return `<div><a href="${esc(data().link)}"><img src="${url}" width="${displayW()}" height="${displayH()}" alt="${esc(altText())}" style="display:block;border:0;width:${displayW()}px;height:${displayH()}px;"></a>` +
+    mailLineHtml() + `</div>`;
 }
 
 
@@ -617,16 +795,211 @@ async function writeClipboard(html, plain){
 
 async function downloadPng(){
   if (!validate()) return;
-  await renderFinal();
-  const url = canvasDataUrl();
+  const url = await imageUrl();
   if (!url) return;
   const a = document.createElement("a");
   a.href = url;
   const name = $("name1").value.trim().replace(/\s+/g,"-") || "email";
-  a.download = `${name}-signature-${displayW()}.png`;
+  a.download = `${name}-signature-${displayW()}.${formatKey}`;
   a.click();
   setStatus("圖片已下載。");
 }
+
+// ===== 動畫版（GIF，測試中）=====
+// 兩格：一般按鈕 → 按下（箭頭右移），每格 1 秒，無限循環。
+// 舊版 Windows Outlook 只顯示第一格（一般按鈕），畫面仍完整。
+// GIF 最多 256 色：以中位切割法從兩格畫面挑出 256 色；第二格只存按鈕附近有變化的區塊。
+const GIF_DELAY = 100;   // 每格停留時間（1/100 秒）
+// 按鈕樣式：第一格固定 BTN_NORMAL，第二格用 BTN_FRAME2[btnStyle2]
+const BTN_NORMAL = { fill: "#ffffff", text: "#171717" };
+const BTN_FRAME2 = {
+  gray:    { name: "淺灰按下（原本）", fill: "#e4e4e7", text: "#171717", dx: 3, push: 1 },
+  red:     { name: "紅底白字",         fill: "#fa0f00", text: "#ffffff", dx: 5 },
+  outline: { name: "外框反白",         stroke: "#ffffff", text: "#ffffff", dx: 5 },
+  glow:    { name: "白色光暈",         fill: "#ffffff", text: "#171717", glow: "rgba(255,255,255,.35)", dx: 6 },
+  grow:    { name: "放大＋紅箭頭",     fill: "#ffffff", text: "#171717", arrow: "#fa0f00", scale: 1.08, dx: 5 },
+  redGlow: { name: "紅底＋紅光暈",     fill: "#fa0f00", text: "#ffffff", glow: "rgba(250,15,0,.35)", dx: 5 }
+};
+let btnStyle2 = "grow";   // 目前使用：放大＋紅箭頭（可改成上面其他樣式的名稱）
+
+function gifPalette(datas){
+  const hist = new Uint32Array(1 << 18);   // 每色 6 bit 統計
+  for (const d of datas) for (let i = 0; i < d.length; i += 4)
+    hist[((d[i] >> 2) << 12) | ((d[i+1] >> 2) << 6) | (d[i+2] >> 2)]++;
+  const items = [];
+  for (let k = 0; k < hist.length; k++) if (hist[k]) items.push(k);
+  const ch = (k, c) => (k >> (12 - c * 6)) & 63;
+  const boxInfo = list => {
+    let lo = [63,63,63], hi = [0,0,0], n = 0;
+    for (const k of list){ n += hist[k]; for (let c = 0; c < 3; c++){ const v = ch(k, c); if (v < lo[c]) lo[c] = v; if (v > hi[c]) hi[c] = v; } }
+    const r = hi.map((h, c) => h - lo[c]);
+    const axis = r.indexOf(Math.max(...r));
+    return { list, n, axis, score: r[axis] * Math.sqrt(n) };
+  };
+  const boxes = [boxInfo(items)];
+  while (boxes.length < 256){
+    let bi = -1, best = 0;
+    boxes.forEach((b, i) => { if (b.list.length > 1 && b.score > best){ best = b.score; bi = i; } });
+    if (bi < 0) break;
+    const b = boxes[bi];
+    b.list.sort((x, y) => ch(x, b.axis) - ch(y, b.axis));
+    // 依像素數找中位數切開；最後一色就超過一半時（例如大面積白色），把它單獨切出來
+    let acc = 0, cut = b.list.length - 1;
+    for (let i = 0; i < b.list.length - 1; i++){ acc += hist[b.list[i]]; if (acc >= b.n / 2){ cut = i + 1; break; } }
+    boxes.splice(bi, 1, boxInfo(b.list.slice(0, cut)), boxInfo(b.list.slice(cut)));
+  }
+  const pal = new Uint8Array(256 * 3);
+  boxes.forEach((b, i) => {
+    const s = [0,0,0];
+    for (const k of b.list) for (let c = 0; c < 3; c++) s[c] += Math.round(ch(k, c) * 255 / 63) * hist[k];   // 0 → 0、63 → 255，純白純黑不偏色
+    for (let c = 0; c < 3; c++) pal[i*3+c] = Math.round(s[c] / b.n);
+  });
+  return { pal, count: boxes.length };
+}
+
+function gifIndexer(pal, count){
+  const cache = new Int16Array(1 << 18).fill(-1);
+  return (r, g, b) => {
+    const key = ((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2);
+    let v = cache[key];
+    if (v < 0){
+      let best = 1e9;
+      for (let i = 0; i < count; i++){
+        const dr = pal[i*3] - r, dg = pal[i*3+1] - g, db = pal[i*3+2] - b;
+        const dist = dr*dr*2 + dg*dg*4 + db*db*3;
+        if (dist < best){ best = dist; v = i; }
+      }
+      cache[key] = v;
+    }
+    return v;
+  };
+}
+
+function gifLzw(indices, out){
+  const CLEAR = 256, EOI = 257;
+  let size = 9, next = 258, dict = new Map(), cur = 0, bits = 0;
+  const bytes = [];
+  const emit = code => {
+    cur |= code << bits; bits += size;
+    while (bits >= 8){ bytes.push(cur & 255); cur >>>= 8; bits -= 8; }
+    if (code === CLEAR){ size = 9; return; }
+    if (next > (1 << size) - 1 && size < 12) size++;
+  };
+  emit(CLEAR);
+  let prefix = indices[0];
+  for (let i = 1; i < indices.length; i++){
+    const k = indices[i], key = (prefix << 8) | k, hit = dict.get(key);
+    if (hit !== undefined){ prefix = hit; continue; }
+    emit(prefix);
+    if (next < 4096){ dict.set(key, next++); }
+    else { emit(CLEAR); dict = new Map(); next = 258; }
+    prefix = k;
+  }
+  emit(prefix); emit(EOI);
+  if (bits > 0) bytes.push(cur & 255);
+  out.push(8);
+  for (let i = 0; i < bytes.length; i += 255){
+    const n = Math.min(255, bytes.length - i);
+    out.push(n);
+    for (let j = 0; j < n; j++) out.push(bytes[i + j]);
+  }
+  out.push(0);
+}
+
+async function makeGif(){
+  await renderFinal();
+  const frames = [false, true].map(pressed => {
+    const cv = document.createElement("canvas");
+    drawSignature(cv, pressed);
+    return cv.getContext("2d").getImageData(0, 0, cv.width, cv.height);
+  });
+  const w = frames[0].width, h = frames[0].height;
+  const { pal, count } = gifPalette(frames.map(f => f.data));
+  const idx = gifIndexer(pal, count);
+  // 右側漸層裝飾圖區域用誤差擴散（dithering）讓漸層平順；文字與其他區域不處理，保持清楚
+  const artX = (LAYOUT.art.x - 10) * SCALE, artY = LAYOUT.lineY * SCALE;
+  const toIndices = (d, x0, y0, fw, fh) => {
+    const a = new Uint8Array(fw * fh);
+    const err = new Float32Array((fw + 2) * 3 * 2);   // 本列與下一列的誤差
+    const row = (r, x, c) => err[((r & 1) * (fw + 2) + x + 1) * 3 + c];
+    const add = (r, x, c, v) => { err[((r & 1) * (fw + 2) + x + 1) * 3 + c] += v; };
+    for (let y = 0; y < fh; y++){
+      err.fill(0, ((y + 1) & 1) * (fw + 2) * 3, (((y + 1) & 1) + 1) * (fw + 2) * 3);
+      for (let x = 0; x < fw; x++){
+        const gx = x0 + x, gy = y0 + y, i = (gy * w + gx) * 4;
+        if (gx < artX || gy >= artY){
+          a[y * fw + x] = idx(d[i], d[i+1], d[i+2]);
+          continue;
+        }
+        const px = [0,1,2].map(c => Math.max(0, Math.min(255, Math.round(d[i+c] + row(y, x, c)))));
+        const k = idx(px[0], px[1], px[2]);
+        a[y * fw + x] = k;
+        for (let c = 0; c < 3; c++){
+          const e = px[c] - pal[k*3+c];
+          add(y, x + 1, c, e * 7/16); add(y + 1, x - 1, c, e * 3/16);
+          add(y + 1, x, c, e * 5/16); add(y + 1, x + 1, c, e * 1/16);
+        }
+      }
+    }
+    return a;
+  };
+  // 第二格只存有變化的區塊
+  const a = frames[0].data, b = frames[1].data;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    const i = (y * w + x) * 4;
+    if (a[i] !== b[i] || a[i+1] !== b[i+1] || a[i+2] !== b[i+2]){
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0){ x0 = y0 = 0; x1 = y1 = 0; }
+  const parts = [
+    { x: 0, y: 0, w, h, ind: toIndices(a, 0, 0, w, h) },
+    { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, ind: toIndices(b, x0, y0, x1 - x0 + 1, y1 - y0 + 1) }
+  ];
+  const out = [];
+  const str = t => { for (const ch of t) out.push(ch.charCodeAt(0)); };
+  const u16 = v => out.push(v & 255, (v >> 8) & 255);
+  str("GIF89a"); u16(w); u16(h);
+  out.push(0xF7, 0, 0);                                   // 全域色盤 256 色
+  for (let i = 0; i < 768; i++) out.push(pal[i]);
+  out.push(0x21, 0xFF, 11); str("NETSCAPE2.0"); out.push(3, 1, 0, 0, 0);   // 無限循環
+  for (const f of parts){
+    out.push(0x21, 0xF9, 4, 0x04); u16(GIF_DELAY); out.push(0, 0);         // 每格 1 秒，保留前一格畫面
+    out.push(0x2C); u16(f.x); u16(f.y); u16(f.w); u16(f.h); out.push(0);
+    gifLzw(f.ind, out);
+  }
+  out.push(0x3B);
+  return new Uint8Array(out);
+}
+
+function bytesToDataUrl(bytes, type){
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return `data:${type};base64,` + btoa(s);
+}
+
+
+
+// 選動畫時，預覽圖每秒切換一般／按下，和 GIF 一樣
+let animTimer = null, animPressed = false;
+function applyFormat(){
+  clearInterval(animTimer);
+  animPressed = false;
+  if (formatKey === "gif"){
+    animTimer = setInterval(() => {
+      if (!IMGS) return;
+      animPressed = !animPressed;
+      drawSignature($("sigCanvas"), animPressed);
+    }, GIF_DELAY * 10);
+  }
+  render();
+}
+document.querySelectorAll('input[name="format"]').forEach(r => r.addEventListener("change", () => {
+  formatKey = r.value;
+  setStatus("");
+  applyFormat();
+}));
 
 fields.forEach(id => $(id).addEventListener("input", () => {
   $(id).classList.remove("invalid");
@@ -645,6 +1018,50 @@ document.querySelectorAll('input[name="office"]').forEach(r => r.addEventListene
   setStatus("");
   render();
 }));
+// 自訂橫幅：還原預設、配色快速選項
+function setCustom(sub, link, col){
+  $("bannerSub").value = sub;
+  $("link").value = link;
+  syncLinkType();
+  $("cBg").value = col.bg; $("cC1").value = col.c1; $("cC2").value = col.c2; $("cText").value = col.text;
+  $("link").classList.remove("invalid");
+}
+// 網址選項：選官網／經銷商名錄時填入固定網址；自己改網址時自動切到「自訂」
+function syncLinkType(){
+  const link = normalizeUrl($("link").value.trim());
+  const key = Object.keys(COMPANY.links).find(k => COMPANY.links[k].url === link) || "custom";
+  document.querySelector(`input[name="linkType"][value="${key}"]`).checked = true;
+}
+document.querySelectorAll('input[name="linkType"]').forEach(r => r.addEventListener("change", () => {
+  if (r.value === "custom"){
+    $("link").focus();
+    $("link").select();
+    return;
+  }
+  $("link").value = COMPANY.links[r.value].url;
+  $("link").classList.remove("invalid");
+  setStatus("");
+  render();
+}));
+$("link").addEventListener("input", syncLinkType);
+$("resetCustom").addEventListener("click", () => {
+  setCustom(COMPANY.banner.sub, COMPANY.website, COMPANY.banner.colors);
+  setStatus("");
+  render();
+});
+PRESETS.forEach(p => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "preset";
+  b.innerHTML = `<i style="background:${p.bg}"></i><i style="background:${p.c1}"></i><i style="background:${p.c2}"></i>${esc(p.name)}`;
+  b.addEventListener("click", () => {
+    $("cBg").value = p.bg; $("cC1").value = p.c1; $("cC2").value = p.c2; $("cText").value = "#ffffff";
+    render();
+  });
+  $("presets").append(b);
+});
+setCustom(COMPANY.banner.sub, COMPANY.website, COMPANY.banner.colors);
+
 $("copyBtn").addEventListener("click", copySignature);
 $("downloadBtn").addEventListener("click", downloadPng);
 
@@ -652,11 +1069,12 @@ $("downloadBtn").addEventListener("click", downloadPng);
   // 重新整理時瀏覽器可能保留上次的選項，以畫面上勾選的為準
   officeKey = document.querySelector('input[name="office"]:checked')?.value || "taipei";
   sizeKey = document.querySelector('input[name="size"]:checked')?.value || "standard";
+  formatKey = document.querySelector('input[name="format"]:checked')?.value || "png";
   $("infoAddress").textContent = office().address;
   try{
     await loadAssets();
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    render();
+    applyFormat();   // 會順便畫出預覽；選動畫時開始播放
   }catch(e){
     setStatus(e.message, true);
   }
