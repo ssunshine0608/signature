@@ -6,7 +6,7 @@
 <title>Email 簽名檔產生器</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Sans:ital,wght@1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Sans:ital,wght@1,400&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
   body{
@@ -45,13 +45,14 @@
   .sample-mail{margin:0 0 16px;font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC","Heiti TC",sans-serif;font-size:10pt;line-height:1.6;color:#222}
   .sample-mail p{margin:0 0 10pt}
   .sample-tag{display:inline-block;margin-bottom:12px;padding:2px 8px;border-radius:999px;background:#f1f1f3;color:#888;font-size:11px}
-  .signature-stage canvas{display:block;width:450px;height:117px}
+  .signature-stage canvas{display:block;width:450px;height:194px}
   .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .seg label{margin:0;cursor:pointer}
   .seg input{position:absolute;opacity:0;width:1px;height:1px}
   .seg span{display:block;padding:9px 11px;border:1px solid #d9d9de;border-radius:8px;font-size:14px;color:#111;background:#fff}
-  .seg small{display:block;margin-top:2px;font-size:11px;color:#888}
-  .seg input:checked + span{border-color:#111;box-shadow:inset 0 0 0 1px #111}
+  .seg small{display:block;margin-top:2px;font-size:11px;font-weight:400;color:#888}
+  .seg input:checked + span{border-color:#555;background:#555;color:#fff}
+  .seg input:checked + span small{color:#ddd}
   .seg input:focus-visible + span{outline:2px solid #999;outline-offset:2px}
   .help{margin-top:16px;padding:14px 15px;border-radius:10px;background:#fafafa;color:#555;font-size:12px;line-height:1.7}
   .help ol{margin:4px 0 0;padding-left:18px}
@@ -86,27 +87,35 @@
           <input id="dept" value="Adobe Team" placeholder="Adobe Team" autocomplete="off">
         </div>
         <div class="field">
-          <label for="title">職稱／職務</label>
+          <label for="title">職稱</label>
           <input id="title" placeholder="業務經理" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>公司據點</label>
+        <div class="seg" role="radiogroup" aria-label="公司據點">
+          <label><input type="radio" name="office" value="taipei" checked><span>台北總公司</span></label>
+          <label><input type="radio" name="office" value="taichung"><span>台中營業據點</span></label>
         </div>
       </div>
 
       <div class="row2">
         <div class="field">
-          <label for="ext">分機</label>
-          <input id="ext" placeholder="123" inputmode="numeric" autocomplete="off">
+          <label for="phone">電話</label>
+          <input id="phone" value="+886 2 2371 6000" autocomplete="off">
         </div>
         <div class="field">
-          <label for="phone">公司電話</label>
-          <input id="phone" value="+886 2 2371 6000" autocomplete="off">
+          <label for="ext">分機</label>
+          <input id="ext" placeholder="123" inputmode="numeric" autocomplete="off">
         </div>
       </div>
 
       <div class="field">
         <label>圖片尺寸</label>
         <div class="seg" role="radiogroup" aria-label="圖片尺寸">
-          <label><input type="radio" name="size" value="standard" checked><span>標準版<small>450 × 117</small></span></label>
-          <label><input type="radio" name="size" value="large"><span>大版<small>600 × 156</small></span></label>
+          <label><input type="radio" name="size" value="standard" checked><span>標準版<small>450 × 194</small></span></label>
+          <label><input type="radio" name="size" value="large"><span>大版<small>600 × 258</small></span></label>
         </div>
       </div>
 
@@ -160,8 +169,8 @@
 
     <section class="panel preview-panel">
       <div class="preview-label">
-        <span id="previewLabel">簽名檔預覽（實際大小 450 × 117）</span>
-        <span>收件人點技術信箱即可寄信</span>
+        <span id="previewLabel">簽名檔預覽（實際大小 450 × 194）</span>
+        <span>點圖片前往官網，點技術信箱可寄信</span>
       </div>
 
       <div class="signature-stage">
@@ -170,13 +179,13 @@
           <p>您好：</p>
           <p>附件為本次的報價單，請參考。<br>如有任何問題，歡迎隨時與我聯繫，謝謝！</p>
         </div>
-        <canvas id="sigCanvas" width="1200" height="312"></canvas>
+        <canvas id="sigCanvas" width="1200" height="516"></canvas>
         <div id="mailLine"></div>
       </div>
 
       <div class="help">
         <strong>固定公司資訊：</strong><br>
-        台北市南港區南港路三段 9 號 12 樓<br>
+        <span id="infoAddress">台北市南港區南港路三段 9 號 12 樓</span><br>
         https://adbecsp.weblink.com.tw/<br>
         技術信箱：adbeservice@weblink.com.tw
       </div>
@@ -186,28 +195,37 @@
 
 <script>
 const COMPANY = {
-  address: "台北市南港區南港路三段 9 號 12 樓",
+  // 公司據點：選擇後帶入對應的地址與公司電話
+  offices: {
+    taipei:   { name: "台北總公司", address: "台北市南港區南港路三段 9 號 12 樓", phone: "+886 2 2371 6000" },
+    taichung: { name: "台中營業據點", address: "臺中市北屯區忠平里敦化路一段509號", phone: "+886 4 2296 5811" }
+  },
   website: "https://adbecsp.weblink.com.tw/",
   supportEmail: "adbeservice@weblink.com.tw",
   supportLabel: "技術信箱",
+  lineLabel: ["Adobe展碁國際", "LINE@官方帳號"],   // QR Code 左邊的兩行字
+  bannerButton: "立即查看 →",                       // 底部橫幅按鈕文字
   assets: {
     brand: "assets/weblink x adobe.svg",
     accent: "assets/pic.svg",
     phone: "assets/icon-phone.png",
     pin: "assets/icon-pin.png",
-    web: "assets/icon-web.png",
-    rainbow: "assets/rainbow-line.png"
+    rainbow: "assets/rainbow-line.png",
+    line: "assets/LINE.png",
+    banner: "assets/通用簽名檔橫幅.svg"
   }
 };
 
-const W = 600, H = 156, SCALE = 2;   // 版面基準尺寸；以 2 倍像素（1200 × 312）輸出
+const W = 600, H = 258, SCALE = 2;   // 版面基準尺寸；以 2 倍像素（1200 × 516）輸出
 // 信件中實際顯示的大小（等比縮放，排版不變），使用者可在表單切換。
-// 圖片一律輸出 1200 × 312 像素，再依尺寸寫入對應 DPI，讓 Outlook 自動以正確寬度顯示。
+// 圖片一律輸出 1200 × 516 像素，再依尺寸寫入對應 DPI，讓 Outlook 自動以正確寬度顯示。
 const SIZES = {
   standard: { w: 450, name: "標準版" },
   large:    { w: 600, name: "大版" }
 };
 let sizeKey = "standard";
+let officeKey = "taipei";
+const office = () => COMPANY.offices[officeKey];
 const displayW  = () => SIZES[sizeKey].w;
 const displayH  = () => Math.round(H * displayW() / W);
 const exportDpi = () => 96 * (W * SCALE) / displayW();   // 標準版 256 DPI、大版 192 DPI
@@ -240,6 +258,8 @@ async function loadAsset(src){
   if (!res.ok) throw new Error("圖片載入失敗：" + src);
   const doc = new DOMParser().parseFromString(await res.text(), "image/svg+xml");
   const svg = doc.documentElement;
+  // SVG 內未轉外框的文字（例如橫幅按鈕）改由程式以網頁字型畫出，避免字型不同
+  doc.querySelectorAll("text").forEach(t => t.remove());
   const vb = (svg.getAttribute("viewBox") || "").split(/[\s,]+/).map(Number);
   if (vb.length === 4 && vb[2] > 0 && vb[3] > 0){
     const k = 1000 / vb[2];   // 以寬 1000 為基準，維持比例
@@ -267,7 +287,8 @@ function data(){
     dept:   v("dept"),
     title:  v("title"),
     ext:    v("ext"),
-    phone:  v("phone")
+    phone:  v("phone"),
+    address: office().address
   };
 }
 
@@ -288,15 +309,20 @@ function drawIcon(ctx, img, x, cy, h=16){
   ctx.drawImage(img, x, cy - h/2, w, h);
 }
 
-// 版面位置（單位：px，以 600 × 156 為基準，依設計稿量測）
+// 版面位置（單位：px，以 600 × 258 為基準，依設計稿量測）
 const LAYOUT = {
-  lineY: 146,                         // 彩虹線位置；裝飾圖只畫在這條線以上
-  art:   { x: 490, y: 48, h: 100,     // 右側裝飾圖，底部貼齊彩虹線，超出右邊的部分會被裁掉
-           fadeStart: 545, fadeEnd: 600, fadeMin: 0 },  // 從 fadeStart 開始向右淡出到 fadeEnd；fadeMin 為最右側殘留濃度（0 = 全白）
-  logo:  { x: 407, y: 6, w: 185 },   // 靠右上角，右側留 8px
+  lineY: 156, rainbowH: 8,            // 彩虹線位置與粗細（底部貼齊橫幅）；裝飾圖只畫在這條線以上
+  bannerY: 164,                       // 底部黑色橫幅（寬 600，高度依 SVG 比例）
+  art:   { x: 477, y: 43, h: 115,     // 右側裝飾圖，底部被彩虹線裁切，超出右邊的部分會被裁掉
+           fadeStart: 540, fadeEnd: 600, fadeMin: 0 },  // 從 fadeStart 開始向右淡出到 fadeEnd；fadeMin 為最右側殘留濃度（0 = 全白）
+  logo:  { x: 378, y: 10, w: 185 },   // 右上角 Logo
   X: 39,                              // 左欄起點
-  row1: 98.5, row2: 123.5,            // 兩行聯絡資訊的垂直中心
-  midX: 244                           // 中欄（地址、網站）最左位置
+  nameY: 40.5, deptY: 67,               // 姓名、部門｜職稱的垂直中心
+  rowMaxX: 254,                       // 電話、地址文字最右可到的位置（超過會自動縮小字級）
+  rowGap: 22.5,                       // 電話與地址兩行的間距（地址底部自動貼齊 QR 圖樣底部）
+  qr:    { x: 374, y: 60, size: 81,   // LINE QR Code
+           innerBottom: 252 / 280 },  // 綠框內黑色 QR 圖樣的底部位置（LINE.png 280 高，圖樣底在 252）
+  lineText: { x: 276, gap: 16.5, size: 12.75, weight: 500, color: "#34b430" }  // QR Code 左邊的綠色字；第二行與地址置底對齊，gap 為行距
 };
 
 function drawSignature(canvas){
@@ -339,7 +365,7 @@ function drawSignature(canvas){
   c.fillRect(0, 26, 14, 46);
 
   const X = L.X;
-  const LEFT_MAX = L.logo.x - 12 - X;   // 姓名、職稱不可碰到 Logo
+  const LEFT_MAX = L.qr.x - 12 - X;   // 姓名、職稱不可碰到右邊的 QR Code 與 Logo
 
   // 姓名：主要姓名粗體大字，其他名稱小字接在後面
   // （其他名稱若是英文用斜體；中文斜體會變形，改用正體）
@@ -358,11 +384,11 @@ function drawSignature(canvas){
   }
   c.fillStyle = "#111111";
   c.font = `700 ${s1}px ${FONT}`;
-  c.fillText(d.name1, X, 39);
+  c.fillText(d.name1, X, L.nameY);
   if (d.name2){
     c.fillStyle = "#222222";
     c.font = font2(s2);
-    c.fillText(d.name2, X + w1 + gap, 41);
+    c.fillText(d.name2, X + w1 + gap, L.nameY + 2);
   }
 
   // 部門 │ 職稱（中間用細直線分隔；部門留空時只顯示職稱）
@@ -376,50 +402,62 @@ function drawSignature(canvas){
     if (i > 0){
       tx += sepGap;
       c.fillStyle = "#9a9a9a";
-      c.fillRect(tx, 66.5 - 7, 1, 14);
+      c.fillRect(tx, L.deptY - 7, 1, 14);
       tx += 1 + sepGap;
     }
     c.fillStyle = "#111111";
-    c.fillText(t, tx, 66.5);
+    c.fillText(t, tx, L.deptY);
     tx += c.measureText(t).width;
   });
 
-  // 左欄：電話、技術信箱
+  // 左欄：電話、地址（文字不可碰到中間的綠色字）
   const FS = 12.5;   // 聯絡資訊字級
+  const TX = X + 24.5, TX2 = X + 22.5;   // 電話、地址文字起點
+  const rowMax = L.rowMaxX - TX2;
   const phoneText = `T ${d.phone}${d.ext ? " #" + d.ext : ""}`;
-  c.font = `400 ${FS}px ${FONT}`;
+  // 地址文字底部貼齊綠框內 QR 圖樣的底部，電話在上一行
+  // 地址字級：取所有據點地址都放得下的大小，切換據點時字不會忽大忽小
+  const addrSize = Math.min(...Object.values(COMPANY.offices).map(o => fitFont(c, o.address, 400, FS, rowMax)));
+  const addrFont = `400 ${addrSize}px ${FONT}`;
+  c.font = addrFont;
+  const am = c.measureText(d.address);
+  const row2 = L.qr.y + L.qr.size * L.qr.innerBottom - am.actualBoundingBoxDescent;
+  const row1 = row2 - L.rowGap;
+  const addrBase = row2 - am.alphabeticBaseline;   // 地址文字的基線（綠色字對齊用）
   c.fillStyle = "#111111";
-  drawIcon(c, IMGS.phone, X + 1, L.row1);
-  c.fillText(phoneText, X + 24.5, L.row1);
-  const phoneEnd = X + 24.5 + c.measureText(phoneText).width;
+  drawIcon(c, IMGS.phone, X + 1.25, row1);   // 電話圖示的圖形中心與下方地址圖示對齊
+  c.font = `400 ${fitFont(c, phoneText, 400, FS, rowMax)}px ${FONT}`;
+  c.fillText(phoneText, TX, row1);
+  const pinH = 15, pinW = pinH * IMGS.pin.naturalWidth / IMGS.pin.naturalHeight;
+  drawIcon(c, IMGS.pin, X + 10 - pinW / 2, row2, pinH);
+  c.font = addrFont;
+  c.fillText(d.address, TX2, row2);
 
-  c.font = `700 ${FS}px ${FONT}`;
-  c.fillStyle = "#fa0f00";
-  c.fillText(COMPANY.supportLabel, X + 1, L.row2);
-  const mailX = X + 1 + c.measureText(COMPANY.supportLabel).width + 6;
-  c.font = `400 ${FS}px ${FONT}`;
-  c.fillStyle = "#111111";
-  c.fillText(COMPANY.supportEmail, mailX, L.row2);
-  const mailEnd = mailX + c.measureText(COMPANY.supportEmail).width;
-
-  // 中欄：地址、網站（左欄較長時自動往右讓位，且不疊到裝飾圖）
-  const MX = Math.max(L.midX, Math.max(phoneEnd, mailEnd) + 12);
-  const MT = MX + 20;
-  const midMax = L.art.x + 4 - MT;
-  drawIcon(c, IMGS.pin, MX, L.row1);
-  c.font = `400 ${fitFont(c, COMPANY.address, 400, FS, midMax)}px ${FONT}`;
-  c.fillStyle = "#111111";
-  c.fillText(COMPANY.address, MT, L.row1);
-  drawIcon(c, IMGS.web, MX, L.row2, 15);
-  c.font = `400 ${fitFont(c, COMPANY.website, 400, FS, midMax)}px ${FONT}`;
-  c.fillText(COMPANY.website, MT, L.row2);
+  // LINE 官方帳號：綠色字 + QR Code
+  c.fillStyle = L.lineText.color;
+  c.font = `${L.lineText.weight} ${L.lineText.size}px ${FONT}`;
+  c.textBaseline = "alphabetic";
+  c.fillText(COMPANY.lineLabel[0], L.lineText.x, addrBase - L.lineText.gap);
+  c.fillText(COMPANY.lineLabel[1], L.lineText.x, addrBase);
+  c.textBaseline = "middle";
+  c.drawImage(IMGS.line, L.qr.x, L.qr.y, L.qr.size, L.qr.size);
 
   // 右上 Logo
   const bh = L.logo.w * IMGS.brand.naturalHeight / IMGS.brand.naturalWidth;
   c.drawImage(IMGS.brand, L.logo.x, L.logo.y, L.logo.w, bh);
 
-  // 底部彩虹線
-  c.drawImage(IMGS.rainbow, 0, L.lineY, W, 5);
+  // 底部橫幅（黑底、標題與圓形圖案來自 SVG；按鈕文字在這裡畫，置中於白色按鈕）
+  const bannerH = W * IMGS.banner.naturalHeight / IMGS.banner.naturalWidth;
+  c.drawImage(IMGS.banner, 0, L.bannerY, W, bannerH);
+  const k = W / 640;   // 橫幅 SVG 原始寬度 640
+  c.fillStyle = "#171717";
+  c.font = `700 ${14.4 * k}px ${FONT}`;
+  c.textAlign = "center";
+  c.fillText(COMPANY.bannerButton, 536.7 * k, L.bannerY + 49 * k);
+  c.textAlign = "left";
+
+  // 彩虹線（蓋在裝飾圖與橫幅的交界）
+  c.drawImage(IMGS.rainbow, 0, L.lineY, W, L.rainbowH);
 }
 
 function mailLineHtml(){
@@ -434,10 +472,11 @@ async function ensureFonts(){
   if (!document.fonts) return;
   const d = data();
   const text = [d.name1, d.name2, d.dept, d.title, d.phone, d.ext, "T#",
-    COMPANY.supportLabel, COMPANY.supportEmail, COMPANY.address, COMPANY.website].join("");
+    d.address, ...COMPANY.lineLabel, COMPANY.bannerButton].join("");
   await Promise.all([
     document.fonts.load(`700 25px "Noto Sans TC"`, text),
     document.fonts.load(`400 12px "Noto Sans TC"`, text),
+    document.fonts.load(`500 12px "Noto Sans TC"`, COMPANY.lineLabel.join("")),
     document.fonts.load(`italic 400 17px "Noto Sans"`, d.name2 || "A")
   ]).catch(() => {});
 }
@@ -524,11 +563,16 @@ function canvasDataUrl(){
   }
 }
 
+// 圖片的替代文字（收件人擋圖片時顯示）
 function altText(){
   const d = data();
   return [`${d.name1} ${d.name2}`.trim(), [d.dept, d.title].filter(Boolean).join("｜"),
-    `T ${d.phone}${d.ext ? " #" + d.ext : ""}`, `${COMPANY.supportLabel} ${COMPANY.supportEmail}`,
-    COMPANY.address, COMPANY.website].join("｜");
+    `T ${d.phone}${d.ext ? " #" + d.ext : ""}`, d.address, COMPANY.website].join("｜");
+}
+
+// 純文字版本（貼到不支援圖片的地方時使用）
+function plainText(){
+  return [altText().replaceAll("｜", "\n"), `${COMPANY.supportLabel}：${COMPANY.supportEmail}`].join("\n");
 }
 
 async function copySignature(){
@@ -537,9 +581,9 @@ async function copySignature(){
   const url = canvasDataUrl();
   if (!url) return;
   const html =
-    `<div><a href="mailto:${esc(COMPANY.supportEmail)}"><img src="${url}" width="${displayW()}" height="${displayH()}" alt="${esc(altText())}" style="display:block;border:0;width:${displayW()}px;height:${displayH()}px;"></a>` +
+    `<div><a href="${esc(COMPANY.website)}"><img src="${url}" width="${displayW()}" height="${displayH()}" alt="${esc(altText())}" style="display:block;border:0;width:${displayW()}px;height:${displayH()}px;"></a>` +
     mailLineHtml() + `</div>`;
-  const plain = altText().replaceAll("｜","\n");
+  const plain = plainText();
   await writeClipboard(html, plain);
   setStatus("已複製，到 Outlook 簽名設定貼上即可。");
 }
@@ -593,10 +637,22 @@ document.querySelectorAll('input[name="size"]').forEach(r => r.addEventListener(
   setStatus("");
   render();
 }));
+// 切換公司據點：地址跟著換，公司電話換成該據點的總機
+document.querySelectorAll('input[name="office"]').forEach(r => r.addEventListener("change", () => {
+  officeKey = r.value;
+  $("phone").value = office().phone;
+  $("infoAddress").textContent = office().address;
+  setStatus("");
+  render();
+}));
 $("copyBtn").addEventListener("click", copySignature);
 $("downloadBtn").addEventListener("click", downloadPng);
 
 (async () => {
+  // 重新整理時瀏覽器可能保留上次的選項，以畫面上勾選的為準
+  officeKey = document.querySelector('input[name="office"]:checked')?.value || "taipei";
+  sizeKey = document.querySelector('input[name="size"]:checked')?.value || "standard";
+  $("infoAddress").textContent = office().address;
   try{
     await loadAssets();
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
